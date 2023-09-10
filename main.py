@@ -8,9 +8,9 @@ import pandas as pd
 import sqlite3
 # Generador de API - Fast API
 from fastapi import FastAPI
-# Declaracion de modelo a partir de la clase para mostrar en la API
+# Declaracion de modelo a partir de la clase para mostrar en la API y funcionalidad para manejo de parametros
 from pydantic import BaseModel
-
+from typing import Any
 
 # ------------------------------------------------------------------ Parte 1 ------------------------------------------------------------------
 # Se debe realizar el desarrollo con el lenguaje de consulta SQL y para esto puede hacer uso de cualquier motor de base de datos.
@@ -46,8 +46,7 @@ cursor_db.execute(
         periodicidad VARCHAR(15) NOT NULL,
         saldo_deuda DECIMAL(10,10) NOT NULL,
         modalidad VARCHAR(10) NOT NULL,
-        tipo_plazo VARCHAR(5) NOT NULL
-        );
+        tipo_plazo VARCHAR(5) NOT NULL);
     """
 )
 #   Seleccion de indices para mejora en el rendimiento de las consultas
@@ -68,8 +67,7 @@ cursor_db.execute(
         tasa_leasing DECIMAL(1,10) NOT NULL,
         tasa_sufi DECIMAL(1,10) NOT NULL,
         tasa_factoring DECIMAL(1,10) NOT NULL,
-        tasa_tarjeta DECIMAL(1,10) NOT NULL
-        );
+        tasa_tarjeta DECIMAL(1,10) NOT NULL);
     """
 )
 #   Seleccion de indices para mejora en el rendimiento de las consultas
@@ -91,8 +89,7 @@ cursor_db.execute("""ALTER TABLE obligaciones ADD COLUMN valor_final DECIMAL(10,
 cursor_db.execute(
     """
     UPDATE obligaciones
-    SET producto=
-    (
+    SET producto=(
     CASE 
     WHEN id_producto LIKE '%Tarjeta%' THEN 'tarjeta'
     WHEN id_producto LIKE '%Cartera%' THEN 'cartera'
@@ -101,8 +98,7 @@ cursor_db.execute(
     WHEN id_producto LIKE '%Leasing%' THEN 'leasing'
     WHEN id_producto LIKE '%Hipotecario%' THEN 'hipotecario'
     WHEN id_producto LIKE '%Factoring%' THEN 'factoring'
-    END
-    );
+    END);
     """
 )
 # Columna tasa
@@ -111,8 +107,7 @@ cursor_db.execute(
 cursor_db.execute(
     """
     UPDATE obligaciones
-    SET tasa=
-    (
+    SET tasa=(
     SELECT
     CASE 
     WHEN producto='tarjeta' THEN tasa_tarjeta
@@ -123,8 +118,7 @@ cursor_db.execute(
     WHEN producto='hipotecario' THEN tasa_hipotecario
     WHEN producto='factoring' THEN tasa_factoring
     END
-    FROM tasas WHERE cod_segm_tasa = cod_segmento AND cod_subsegm_tasa = cod_subsegmento AND cal_interna_tasa = calificacion_riesgos
-    );
+    FROM tasas WHERE cod_segm_tasa = cod_segmento AND cod_subsegm_tasa = cod_subsegmento AND cal_interna_tasa = calificacion_riesgos);
     """
 )
 # Columna tasa_efectiva
@@ -140,8 +134,7 @@ cursor_db.execute(
     CREATE TABLE obligaciones_clientes_productos(
         num_documento INTEGER PRIMARY KEY NOT NULL,
         cantidad_obligaciones INTEGER NOT NULL,
-        valor_total DECIMAL(10,5) NOT NULL
-        );
+        valor_total DECIMAL(10,5) NOT NULL);
     """
 )
 # Ingesta de los datos con la logica solicitada
@@ -166,8 +159,7 @@ resultado_parte1_obligaciones.to_excel('resultados/parte1_obligaciones.xlsx', in
 # Extarccion de la tabla obligaciones_clientes_productos
 resultado_parte1_obligaciones_clientes = pd.read_sql(
     """
-    SELECT num_documento,cantidad_obligaciones,valor_total 
-    FROM obligaciones_clientes_productos ORDER BY cantidad_obligaciones
+    SELECT num_documento,cantidad_obligaciones,valor_total FROM obligaciones_clientes_productos ORDER BY cantidad_obligaciones
     """, conexion_db)
 resultado_parte1_obligaciones_clientes.to_excel('resultados/parte1_obligaciones_clientes.xlsx', index=False)
 
@@ -180,7 +172,6 @@ resultado_parte1_obligaciones_clientes.to_excel('resultados/parte1_obligaciones_
 # para evitar inconsistencias se convierte ese campo a minusculas para validar
 def obtener_producto(row):
     id_producto = row['id_producto'].lower()
-
     if('tarjeta' in id_producto): 
         return 'tarjeta'
     elif('cartera' in id_producto): 
@@ -208,7 +199,6 @@ def obtener_tasa(row):
     tasa_leasing = row['tasa_leasing']
     tasa_hipotecario = row['tasa_hipotecario']
     tasa_factoring = row['tasa_factoring']
-
     if(producto=='tarjeta'): 
         return tasa_tarjeta
     elif(producto=='cartera'): 
@@ -259,6 +249,20 @@ resultado_parte2_obligaciones_clientes.to_excel('resultados/parte2_obligaciones_
 # Creacion de la app
 app = FastAPI(title='Consulta informacion de productos y valor total de cliente')
 
+# Creacion de la clase Response para la entrega de los datos a la API mediante lista, debido a que proviene de un DataFrame
+class Response(BaseModel):
+    data: list[dict[str, Any]]
+
+# Creacion de peticion para obtener la informacion de los productos asociados a un cliente 
+# Ruta asignada, asignacion de variable y asignacion del modelo a seguir (clase Response)
+@app.get("/productos_clientes/{num_documento}", response_model=Response)
+# Definicion de funcion para que a partir del numero de documento retorne la informacion de los productos que la persona tiene
+# como la consulta entrega el DataFrame se realiza el ajuste para que pueda ser entregado a la peticion de la API
+def obtener_informacion_cliente(num_documento):
+    informacion_cliente = pd.read_sql("""SELECT id_producto, producto,tasa_efectiva,valor_final FROM obligaciones WHERE num_documento=""" + num_documento, conexion_db)
+    return Response(
+            data=informacion_cliente.to_dict(orient="records")
+        )
 
 # Creacion de peticion para obtener el valor total de aquellos clientes que la cantidad de productos e smayor o igual a 2 
 # Ruta asignada y asignacion de variable
@@ -266,8 +270,5 @@ app = FastAPI(title='Consulta informacion de productos y valor total de cliente'
 # Definicion de funcion para que a partir del numero de documento retorne el valor total de la tabla obligaciones_clientes_productos
 # como la consulta entrega el DataFrame se realiza el ajuste para que solo entregue el valor
 def obtener_valor_total_cliente(num_documento):
-  informacion_cliente = pd.read_sql("""
-                                    SELECT valor_total
-                                    FROM obligaciones_clientes_productos
-                                    WHERE num_documento=""" + num_documento, conexion_db)
+  informacion_cliente = pd.read_sql("""SELECT valor_total FROM obligaciones_clientes_productos WHERE num_documento=""" + num_documento, conexion_db)
   return {"valor_total": informacion_cliente['valor_total'][0]}
