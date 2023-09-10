@@ -7,7 +7,8 @@ import pandas as pd
 # Gestor de base de datos SQLite
 import sqlite3
 
-# Parte 1 -> Se debe realizar el desarrollo con el lenguaje de consulta SQL y para esto puede hacer uso de cualquier motor de base de datos.
+# ------------------------------------------------------------------ Parte 1 ------------------------------------------------------------------
+# Se debe realizar el desarrollo con el lenguaje de consulta SQL y para esto puede hacer uso de cualquier motor de base de datos.
 # En este caso se escoge SQLite para evitar que el usuario final requiera configuraciones adicionales de creaciona de la base datos y conexiones a la misma
 
 # Se toma la tabla de obligaciones clientes y se convierte a DataFrame
@@ -164,3 +165,85 @@ resultado_parte1_obligaciones_clientes = pd.read_sql(
     FROM obligaciones_clientes_productos ORDER BY cantidad_obligaciones
     """, conexion_db)
 resultado_parte1_obligaciones_clientes.to_excel('resultados/parte1_obligaciones_clientes.xlsx', index=False)
+
+
+# ------------------------------------------------------------------ Parte 2 ------------------------------------------------------------------
+# Utilizando el lenguaje programación de Python y usando la librería pandas, se debe realizar todos los ejercicios de la parte 1
+# Los DataFrames ya se encuentran creados desde el paso anterior
+
+# Funcion que retorna el producto a partir del campo id_producto, validando si este campo la palabra clave que permite diferenciarlos
+# para evitar inconsistencias se convierte ese campo a minusculas para validar
+def obtener_producto(row):
+    id_producto = row['id_producto'].lower()
+
+    if('tarjeta' in id_producto): 
+        return 'tarjeta'
+    elif('cartera' in id_producto): 
+        return 'cartera'
+    elif('operacion_especifica' in id_producto): 
+        return 'operacion_especifica'
+    elif('sufi' in id_producto): 
+        return 'sufi'
+    elif('leasing' in id_producto): 
+        return 'leasing'
+    elif('hipotecario' in id_producto): 
+        return 'hipotecario'
+    elif('factoring' in id_producto): 
+        return 'factoring'
+    else:
+        return ''
+
+# Funcion que retorna la tasa a partir del campo producto, cuando cumpla con la condicion se retorna la tasa que le corresponde al producto
+def obtener_tasa(row):
+    producto = row['producto']
+    tasa_tarjeta = row['tasa_tarjeta']
+    tasa_cartera = row['tasa_cartera']
+    tasa_operacion_especifica = row['tasa_operacion_especifica']
+    tasa_sufi = row['tasa_sufi']
+    tasa_leasing = row['tasa_leasing']
+    tasa_hipotecario = row['tasa_hipotecario']
+    tasa_factoring = row['tasa_factoring']
+
+    if(producto=='tarjeta'): 
+        return tasa_tarjeta
+    elif(producto=='cartera'): 
+        return tasa_cartera
+    elif(producto=='operacion_especifica'): 
+        return tasa_operacion_especifica
+    elif(producto=='sufi'): 
+        return tasa_sufi
+    elif(producto=='leasing'): 
+        return tasa_leasing
+    elif(producto=='hipotecario'): 
+        return tasa_hipotecario
+    elif(producto=='factoring'): 
+        return tasa_factoring
+    else:
+        return 0
+
+# Manipulacion y transformacion de datos
+# Inner Join entre la tabla obligaciones y tasas a partir de las llaves que comparten, lo que se alamcenara en un nuevo DataFrame
+resultado_parte2_obligaciones = obligaciones.merge(tasas, how='inner', left_on=['cod_segm_tasa','cod_subsegm_tasa','cal_interna_tasa'], right_on=['cod_segmento','cod_subsegmento','calificacion_riesgos'])
+# Asignacion de nueva columna para el campo producto, aplicando la funcion obtener_producto al DataFrame mediante el comando apply
+resultado_parte2_obligaciones['producto'] = resultado_parte2_obligaciones.apply(obtener_producto, axis=1)
+# Asignacion de nueva columna para el campo tasa, aplicando la funcion obtener_tasa al DataFrame mediante el comando apply
+resultado_parte2_obligaciones['tasa'] = resultado_parte2_obligaciones.apply(obtener_tasa, axis=1)
+# Asignacion de nueva columna para el campo tasa_efectiva, aplicando la formula designada (con su simplificacion)
+resultado_parte2_obligaciones['tasa_efectiva'] = ((1+resultado_parte2_obligaciones['tasa'])**(resultado_parte2_obligaciones['cod_periodicidad']/12))-1
+# Asignacion de nueva columna para el campo valor_final, aplicando el calculo indicado
+resultado_parte2_obligaciones['valor_final'] = resultado_parte2_obligaciones['tasa_efectiva']*resultado_parte2_obligaciones['valor_inicial']
+
+# Genercion de DatFrame para calculo de valor total de obligacion por cliente
+resultado_parte2_obligaciones_clientes = resultado_parte2_obligaciones.groupby('num_documento')['valor_final'].agg(['count','sum']).reset_index().rename(columns={'count':'num_obligaciones', 'sum':'valor_total'})
+# Filtracion para solo aquellos clientes que tengan obligaciones mayor o igual a 2
+resultado_parte2_obligaciones_clientes = resultado_parte2_obligaciones_clientes[resultado_parte2_obligaciones_clientes['num_obligaciones']>=2]
+
+# Depuracion de datos
+# Eliminacion de columnas de tabla tasas que ya no son necesarias
+resultado_parte2_obligaciones.drop(columns={'cod_segmento','segmento','cod_subsegmento','calificacion_riesgos','tasa_cartera','tasa_operacion_especifica','tasa_hipotecario','tasa_leasing','tasa_sufi','tasa_factoring','tasa_tarjeta'}, axis=1, inplace=True)
+
+# Entrega de resultados
+# Exportar el DataFrame de obligaciones transformado a excel en la ruta resultados
+resultado_parte2_obligaciones.to_excel('resultados/parte2_obligaciones.xlsx', index=False)
+# Exportar el DataFrame de obligaciones por cliente con obligaciones mayor o igual a 2 a excel en la ruta resultados
+resultado_parte2_obligaciones_clientes.to_excel('resultados/parte2_obligaciones_clientes.xlsx', index=False)
