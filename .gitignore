@@ -1,1 +1,4 @@
+# se ignora el directorio del entrono virtual
 venv_proyecto_obligaciones
+# se ignora la base de datos
+src/productos.db
