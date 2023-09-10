@@ -6,6 +6,11 @@
 import pandas as pd
 # Gestor de base de datos SQLite
 import sqlite3
+# Generador de API - Fast API
+from fastapi import FastAPI
+# Declaracion de modelo a partir de la clase para mostrar en la API
+from pydantic import BaseModel
+
 
 # ------------------------------------------------------------------ Parte 1 ------------------------------------------------------------------
 # Se debe realizar el desarrollo con el lenguaje de consulta SQL y para esto puede hacer uso de cualquier motor de base de datos.
@@ -18,7 +23,7 @@ tasas = pd.read_excel(r'src\tasas_productos.xlsx',sheet_name='Tasas',header=0)
 
 # Generacion de conexion a la base de datos
 # con esto se crea la base de datos en la ruta indicada cada vez que se ejeute el programa y por eso no se cargar la base de datos al repositorio
-conexion_db = sqlite3.connect("src/productos.db")
+conexion_db = sqlite3.connect("src/productos.db", check_same_thread=False)
 # Generacion del onjeto cursor para ejejcutar los comandos SQL
 cursor_db = conexion_db.cursor()
 # Creacion de las tablas, donde se debe tener en cuenta la metadata de cada una, para la identificacion de campos y tipos de campos
@@ -135,7 +140,7 @@ cursor_db.execute(
     CREATE TABLE obligaciones_clientes_productos(
         num_documento INTEGER PRIMARY KEY NOT NULL,
         cantidad_obligaciones INTEGER NOT NULL,
-        valor_obligaciones DECIMAL(10,5) NOT NULL
+        valor_total DECIMAL(10,5) NOT NULL
         );
     """
 )
@@ -161,7 +166,7 @@ resultado_parte1_obligaciones.to_excel('resultados/parte1_obligaciones.xlsx', in
 # Extarccion de la tabla obligaciones_clientes_productos
 resultado_parte1_obligaciones_clientes = pd.read_sql(
     """
-    SELECT num_documento,cantidad_obligaciones,valor_obligaciones 
+    SELECT num_documento,cantidad_obligaciones,valor_total 
     FROM obligaciones_clientes_productos ORDER BY cantidad_obligaciones
     """, conexion_db)
 resultado_parte1_obligaciones_clientes.to_excel('resultados/parte1_obligaciones_clientes.xlsx', index=False)
@@ -247,3 +252,22 @@ resultado_parte2_obligaciones.drop(columns={'cod_segmento','segmento','cod_subse
 resultado_parte2_obligaciones.to_excel('resultados/parte2_obligaciones.xlsx', index=False)
 # Exportar el DataFrame de obligaciones por cliente con obligaciones mayor o igual a 2 a excel en la ruta resultados
 resultado_parte2_obligaciones_clientes.to_excel('resultados/parte2_obligaciones_clientes.xlsx', index=False)
+
+
+# ------------------------------------------------------------------ Parte 3 ------------------------------------------------------------------
+# Desarrollar un API desde el lenguaje de programación Python, para exponer información
+# Creacion de la app
+app = FastAPI(title='Consulta informacion de productos y valor total de cliente')
+
+
+# Creacion de peticion para obtener el valor total de aquellos clientes que la cantidad de productos e smayor o igual a 2 
+# Ruta asignada y asignacion de variable
+@app.get("/valor_total_clientes/{num_documento}")
+# Definicion de funcion para que a partir del numero de documento retorne el valor total de la tabla obligaciones_clientes_productos
+# como la consulta entrega el DataFrame se realiza el ajuste para que solo entregue el valor
+def obtener_valor_total_cliente(num_documento):
+  informacion_cliente = pd.read_sql("""
+                                    SELECT valor_total
+                                    FROM obligaciones_clientes_productos
+                                    WHERE num_documento=""" + num_documento, conexion_db)
+  return {"valor_total": informacion_cliente['valor_total'][0]}
