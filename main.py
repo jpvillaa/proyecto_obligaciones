@@ -251,7 +251,7 @@ app = FastAPI(title='Consulta informacion de productos y valor total de cliente'
 
 # Creacion de la clase Response para la entrega de los datos a la API mediante lista, debido a que proviene de un DataFrame
 class Response(BaseModel):
-    data: list[dict[str, Any]]
+    data: 'list[dict[str, Any]]'
 
 # Creacion de peticion para obtener la informacion de los productos asociados a un cliente 
 # Ruta asignada, asignacion de variable y asignacion del modelo a seguir (clase Response)

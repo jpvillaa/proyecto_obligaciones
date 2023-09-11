@@ -7,6 +7,7 @@ Los resultados del procesamiento de este se encuentra en la carpeta resultados (
 ## ¿Cómo se desarrolló?
 Se realizó la creación del repositorio, se procede a clonar la carpeta donde allí se configura un entorno virtual al cual se le instalaron las librerias necesarias, 
 adicionalmente se crea el script (main.py) con el cual se procesa la información.
+Adicionalmente se crea una rama de desarrollo mientras se realizan los cambios y ajustes.
 ### Parte 1
 Se escoge trabajar con SQLite para evitar que quien realice las validacioens no requiera configurar la base de datos, instalaciones extras o tener que convertir manualmente los archivos a base datos.
 Se capturan las tablas obligaciones y tasas de los archivos correspondientes, donde se realiza una transformacion a DataFrame, posteriormente medinate la libreria sqlite3 se crea la base de datos, con las tablas respectivas y se ingresan los datos de cada DataFrame. Con esto configurado se crean unas columnas adicionales para almacenar dichos datos (producto, tasa, tasa_efectiva, valor_final), los cuales se alimentan a partir de la ejecucion de otras consultas y bajo las condiciones indicadas.
@@ -21,3 +22,15 @@ Para la construcción de la API se implementa el framework FastAPI, donde se cre
 Para evidenciar el resultado se debe probar de manera local 
 
 ## ¿Cómo realizar la prueba funcional?
+Ingresamos a la carpeta donde deseamos clonar el proyecto y ejecutamso el comando 
+```git clone https://github.com/jpvillaa/proyecto_obligaciones.git```
+Ingresmos a la carpeta que se genera y creamos el entorno virtual
+En caso de no tener la ....
+
+python -m virtualenv venv_proyecto_obligaciones
+venv_proyecto_obligaciones\Scripts\activate.bat
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+
+

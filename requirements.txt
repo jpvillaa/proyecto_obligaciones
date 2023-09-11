@@ -1,4 +1,6 @@
-pandas==2.1.0
-fastapi==0.103.1
-pydantic_core==2.6.3
-typing_extensions==4.7.1
+pandas
+fastapi
+pydantic_core
+typing_extensions
+uvicorn
+openpyxl
