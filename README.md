@@ -3,6 +3,7 @@ Manipulación de los datos mediante sql y python para calcular la tasa efectiva 
 Posterior a esto se construye una API para entregar los datos solicitados.
 Los archivos de insumo se encuentran en la carpeta src.
 Los resultados del procesamiento de este se encuentra en la carpeta resultados (parte 1 y 2), para la parte 3 se debe ejecutar el programa de manera local (se explica al final)
+#### Nota: este proyecto fue desarrollado bajo la version de python 3.10 - la cual es la que se recomienda para evitar novedades con las diferentes librerías con las que se trabajan. Adicionalmente como sqlite ahora viene con python, la funcion POW no se encuentra disponible en todas las versiones de python 3 
 
 ## ¿Cómo se desarrolló?
 Se realizó la creación del repositorio, se procede a clonar la carpeta donde allí se configura un entorno virtual al cual se le instalaron las librerias necesarias, 
