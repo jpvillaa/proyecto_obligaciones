@@ -1,0 +1,6 @@
+pandas
+fastapi
+pydantic_core
+typing_extensions
+uvicorn
+openpyxl
