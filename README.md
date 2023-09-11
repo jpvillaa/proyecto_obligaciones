@@ -22,15 +22,15 @@ Para la construcción de la API se implementa el framework FastAPI, donde se cre
 Para evidenciar el resultado se debe probar de manera local 
 
 ## ¿Cómo realizar la prueba funcional?
-Ingresamos a la carpeta donde deseamos clonar el proyecto y ejecutamso el comando 
-```git clone https://github.com/jpvillaa/proyecto_obligaciones.git```
-Ingresmos a la carpeta que se genera y creamos el entorno virtual
-En caso de no tener la ....
-
-python -m virtualenv venv_proyecto_obligaciones
-venv_proyecto_obligaciones\Scripts\activate.bat
-pip install -r requirements.txt
-uvicorn main:app --reload
-
-
-
+- Ingresamos a la carpeta donde deseamos clonar el proyecto y ejecutamos el comando ```git clone https://github.com/jpvillaa/proyecto_obligaciones.git```
+- Posterior a esto en la carpeta generada al clonar el repositorio creamos el entorno virtual con el siguiente comando ```python -m virtualenv venv_proyecto_obligaciones```
+- Activamos el entorno virtual ```venv_proyecto_obligaciones\Scripts\activate.bat```
+- Ejecutamos el siguiente comando para instalar las librerías necesarias ```pip install -r requirements.txt```
+- Para ejecutar el programa ```uvicorn main:app --reload``` - con esto se ejecutaran los pasos indicados en el desarrollo, donde genera la base de datos y entrega los resultados de la parte 1 y 2 en la carpeta resultados; el archivo obligaciones entrega como queda la tabla obligaciones con las transformaciones y los otros archivos obligaciones_clientes entrega el valor total de las deudas por cliente cuando tiene un numero de obligaciones mayor o igual a 2.
+- Para probar la API ingresa ```http://127.0.0.1:8000/docs#/``` donde se pueden ver ambos metodos GET para probar las peticiones. 
+![Imagen de metodos GET API](/src/peticiones_API.png)
+![Peticion 1 API](/src/peticion_1_API.png)
+![Peticion 2 API](/src/peticion_2_API.png)
+Si se desea probar de la otra forma se puede ingresar asi: 
+- ```http://127.0.0.1:8000/productos_clientes/{num_documento}``` 
+- ```http://127.0.0.1:8000/valor_total_clientes/{num_documento}```
